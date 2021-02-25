@@ -56,6 +56,11 @@ var posts = [
   }
 ];
 
+function getIndexFromInd(index) {
+  var splittedArray = index.split("-");
+  return Belt_Array.getExn(splittedArray, splittedArray.length - 1 | 0);
+}
+
 function postHeading(heading) {
   var headingTag = document.createElement("h2");
   headingTag.classList = "post-heading";
@@ -84,27 +89,6 @@ function appendIdStr(id, index) {
   return id + "-" + index;
 }
 
-function postBtn(index) {
-  var btn = document.createElement("button");
-  btn.setAttribute("id", appendId("block-delete", index));
-  btn.classList = "button button-danger";
-  btn.innerText = "Remove";
-  return btn;
-}
-
-function postDiv(index, post) {
-  var mainDiv = document.createElement("div");
-  mainDiv.classList = "post";
-  mainDiv.setAttribute("id", appendId("block", index));
-  mainDiv.appendChild(postHeading(post.title));
-  mainDiv.appendChild(postSubHeading(post.author));
-  Belt_Array.forEach(post.text, (function (text) {
-          return mainDiv.appendChild(postParagraph(text));
-        }));
-  mainDiv.appendChild(postBtn(index));
-  return mainDiv;
-}
-
 function deletePara(title) {
   var paraTag = document.createElement("p");
   paraTag.classList = "text-center";
@@ -119,9 +103,16 @@ function deletePara(title) {
 }
 
 function restoreFn($$event, originalDiv) {
+  console.log("Restore event called...");
   var recoverElem = Caml_array.get($$event.path, 2);
   console.log(recoverElem);
   return recoverElem.replaceWith(originalDiv);
+}
+
+function deleteFn($$event) {
+  console.log("Delete event called...");
+  var recoverElem = Caml_array.get($$event.path, 2);
+  return recoverElem.remove();
 }
 
 function recoverDiv(index, title, originalDiv) {
@@ -142,10 +133,7 @@ function recoverDiv(index, title, originalDiv) {
   delImmBtn.setAttribute("id", appendId("block-delete-immediate", index));
   delImmBtn.classList = "button button-danger";
   delImmBtn.innerText = "Delete Immediately";
-  delImmBtn.addEventListener("click", (function (param) {
-          console.log("deleted...");
-          
-        }));
+  delImmBtn.addEventListener("click", deleteFn);
   flexDiv.appendChild(restoreBtn);
   flexDiv.appendChild(delImmBtn);
   var progressDiv = document.createElement("div");
@@ -155,12 +143,8 @@ function recoverDiv(index, title, originalDiv) {
   return deletedDiv;
 }
 
-function getIndexFromInd(index) {
-  var splittedArray = index.split("-");
-  return Belt_Array.getExn(splittedArray, splittedArray.length - 1 | 0);
-}
-
 function removeFn($$event) {
+  console.log("Remove event called...");
   var divElem = Caml_array.get($$event.path, 1);
   var title = Caml_array.get(divElem.childNodes, 0).innerText;
   var index = getIndexFromInd(divElem.id);
@@ -168,26 +152,48 @@ function removeFn($$event) {
   return divElem.replaceWith(recoverElem);
 }
 
+function postBtn(index) {
+  var btn = document.createElement("button");
+  btn.setAttribute("id", appendId("block-delete", index));
+  btn.classList = "button button-danger";
+  btn.innerText = "Remove";
+  btn.addEventListener("click", removeFn);
+  return btn;
+}
+
+function postDiv(index, post) {
+  var mainDiv = document.createElement("div");
+  mainDiv.classList = "post";
+  mainDiv.setAttribute("id", appendId("block", index));
+  mainDiv.appendChild(postHeading(post.title));
+  mainDiv.appendChild(postSubHeading(post.author));
+  Belt_Array.forEach(post.text, (function (text) {
+          return mainDiv.appendChild(postParagraph(text));
+        }));
+  mainDiv.appendChild(postBtn(index));
+  return mainDiv;
+}
+
 Belt_Array.forEachWithIndex(posts, (function (index, post) {
-        document.body.appendChild(postDiv(String(index), post));
-        return document.getElementById(appendId("block", String(index))).addEventListener("click", removeFn);
+        return document.body.appendChild(postDiv(String(index), post));
       }));
 
 export {
   Post ,
   posts ,
+  getIndexFromInd ,
   postHeading ,
   postSubHeading ,
   postParagraph ,
   appendId ,
   appendIdStr ,
-  postBtn ,
-  postDiv ,
   deletePara ,
   restoreFn ,
+  deleteFn ,
   recoverDiv ,
-  getIndexFromInd ,
   removeFn ,
+  postBtn ,
+  postDiv ,
   
 }
 /*  Not a pure module */

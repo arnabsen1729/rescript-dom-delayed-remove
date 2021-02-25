@@ -48,6 +48,12 @@ let posts = [
   ),
 ]
 
+let getIndexFromInd = index => {
+  let splittedArray = Js.String.split("-", index)
+  let id = Belt.Array.getExn(splittedArray, Belt.Array.length(splittedArray) - 1)
+  id
+}
+
 let postHeading = (heading: string) => {
   let headingTag = document["createElement"]("h2")
   headingTag["classList"] = "post-heading"
@@ -71,31 +77,6 @@ let postParagraph = (paraText: string) => {
 let appendId = (id, index) => `${id}-${index}`
 let appendIdStr = (id, index) => `${id}-${index}`
 
-// let postId = index => `block-${Belt.Int.toString(index)}`
-// let btnId = index => `block-delete-${Belt.Int.toString(index)}`
-
-let postBtn = (index: string) => {
-  // <button id="block-delete-0" class="button button-danger">Remove this post</button>
-  let btn = document["createElement"]("button")
-  btn["setAttribute"]("id", appendId("block-delete", index))
-  btn["classList"] = "button button-danger"
-  btn["innerText"] = "Remove"
-  btn
-}
-
-let postDiv = (index: string, post: Post.t) => {
-  let mainDiv = document["createElement"]("div")
-  mainDiv["classList"] = "post"
-  mainDiv["setAttribute"]("id", appendId("block", index))
-  mainDiv["appendChild"](postHeading(post.title))
-  mainDiv["appendChild"](postSubHeading(post.author))
-  Belt.Array.forEach(post.text, text => {
-    mainDiv["appendChild"](postParagraph(text))
-  })
-  mainDiv["appendChild"](postBtn(index))
-  mainDiv
-}
-
 let deletePara = title => {
   let paraTag = document["createElement"]("p")
   paraTag["classList"] = "text-center"
@@ -110,9 +91,16 @@ let deletePara = title => {
 }
 
 let restoreFn = (event, originalDiv) => {
+  Js.log("Restore event called...")
   let recoverElem = event["path"][2]
   Js.log(recoverElem)
   recoverElem["replaceWith"](originalDiv)
+}
+
+let deleteFn = event => {
+  Js.log("Delete event called...")
+  let recoverElem = event["path"][2]
+  recoverElem["remove"]()
 }
 
 let recoverDiv = (index: string, title: string, originalDiv) => {
@@ -134,7 +122,7 @@ let recoverDiv = (index: string, title: string, originalDiv) => {
   delImmBtn["setAttribute"]("id", appendId("block-delete-immediate", index))
   delImmBtn["classList"] = "button button-danger"
   delImmBtn["innerText"] = "Delete Immediately"
-  delImmBtn["addEventListener"]("click", () => {Js.log("deleted...")})
+  delImmBtn["addEventListener"]("click", deleteFn)
 
   flexDiv["appendChild"](restoreBtn)
   flexDiv["appendChild"](delImmBtn)
@@ -148,13 +136,8 @@ let recoverDiv = (index: string, title: string, originalDiv) => {
   deletedDiv
 }
 
-let getIndexFromInd = index => {
-  let splittedArray = Js.String.split("-", index)
-  let id = Belt.Array.getExn(splittedArray, Belt.Array.length(splittedArray) - 1)
-  id
-}
-
 let removeFn = event => {
+  Js.log("Remove event called...")
   let divElem = event["path"][1]
   let title = divElem["childNodes"][0]["innerText"]
   let index = getIndexFromInd(divElem["id"])
@@ -162,11 +145,37 @@ let removeFn = event => {
   divElem["replaceWith"](recoverElem)
 }
 
+// let postId = index => `block-${Belt.Int.toString(index)}`
+// let btnId = index => `block-delete-${Belt.Int.toString(index)}`
+
+let postBtn = (index: string) => {
+  // <button id="block-delete-0" class="button button-danger">Remove this post</button>
+  let btn = document["createElement"]("button")
+  btn["setAttribute"]("id", appendId("block-delete", index))
+  btn["classList"] = "button button-danger"
+  btn["innerText"] = "Remove"
+  btn["addEventListener"]("click", removeFn)
+  btn
+}
+
+let postDiv = (index: string, post: Post.t) => {
+  let mainDiv = document["createElement"]("div")
+  mainDiv["classList"] = "post"
+  mainDiv["setAttribute"]("id", appendId("block", index))
+  mainDiv["appendChild"](postHeading(post.title))
+  mainDiv["appendChild"](postSubHeading(post.author))
+  Belt.Array.forEach(post.text, text => {
+    mainDiv["appendChild"](postParagraph(text))
+  })
+  mainDiv["appendChild"](postBtn(index))
+  mainDiv
+}
+
 Belt.Array.forEachWithIndex(posts, (index, post) => {
   document["body"]["appendChild"](postDiv(Belt.Int.toString(index), post))
   // document["body"]["appendChild"](recoverDiv(index, post))
-  document["getElementById"](appendId("block", Belt.Int.toString(index)))["addEventListener"](
-    "click",
-    removeFn,
-  )
+  // document["getElementById"](appendId("block", Belt.Int.toString(index)))["addEventListener"](
+  //   "click",
+  //   removeFn,
+  // )
 })
