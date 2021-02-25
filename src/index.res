@@ -68,12 +68,13 @@ let postParagraph = (paraText: string) => {
   paraTag
 }
 
-let appendId = (id, index) => `${id}-${Belt.Int.toString(index)}`
+let appendId = (id, index) => `${id}-${index}`
+let appendIdStr = (id, index) => `${id}-${index}`
 
 // let postId = index => `block-${Belt.Int.toString(index)}`
 // let btnId = index => `block-delete-${Belt.Int.toString(index)}`
 
-let postBtn = index => {
+let postBtn = (index: string) => {
   // <button id="block-delete-0" class="button button-danger">Remove this post</button>
   let btn = document["createElement"]("button")
   btn["setAttribute"]("id", appendId("block-delete", index))
@@ -82,7 +83,7 @@ let postBtn = index => {
   btn
 }
 
-let postDiv = (index: int, post: Post.t) => {
+let postDiv = (index: string, post: Post.t) => {
   let mainDiv = document["createElement"]("div")
   mainDiv["classList"] = "post"
   mainDiv["setAttribute"]("id", appendId("block", index))
@@ -108,11 +109,17 @@ let deletePara = title => {
   paraTag
 }
 
-let recoverDiv = (index, post: Post.t) => {
+let restoreFn = (event, originalDiv) => {
+  let recoverElem = event["path"][2]
+  Js.log(recoverElem)
+  recoverElem["replaceWith"](originalDiv)
+}
+
+let recoverDiv = (index: string, title: string, originalDiv) => {
   let deletedDiv = document["createElement"]("div")
   deletedDiv["classList"] = "post-deleted pt-1"
   deletedDiv["setAttribute"]("id", appendId("block", index))
-  deletedDiv["appendChild"](deletePara(post.title))
+  deletedDiv["appendChild"](deletePara(title))
 
   let flexDiv = document["createElement"]("div")
   flexDiv["classList"] = "flex-center"
@@ -121,11 +128,13 @@ let recoverDiv = (index, post: Post.t) => {
   restoreBtn["setAttribute"]("id", appendId("block-restore", index))
   restoreBtn["classList"] = "button button-warning mr-1"
   restoreBtn["innerText"] = "Restore"
+  restoreBtn["addEventListener"]("click", event => {restoreFn(event, originalDiv)})
 
   let delImmBtn = document["createElement"]("button")
   delImmBtn["setAttribute"]("id", appendId("block-delete-immediate", index))
   delImmBtn["classList"] = "button button-danger"
   delImmBtn["innerText"] = "Delete Immediately"
+  delImmBtn["addEventListener"]("click", () => {Js.log("deleted...")})
 
   flexDiv["appendChild"](restoreBtn)
   flexDiv["appendChild"](delImmBtn)
@@ -139,7 +148,25 @@ let recoverDiv = (index, post: Post.t) => {
   deletedDiv
 }
 
+let getIndexFromInd = index => {
+  let splittedArray = Js.String.split("-", index)
+  let id = Belt.Array.getExn(splittedArray, Belt.Array.length(splittedArray) - 1)
+  id
+}
+
+let removeFn = event => {
+  let divElem = event["path"][1]
+  let title = divElem["childNodes"][0]["innerText"]
+  let index = getIndexFromInd(divElem["id"])
+  let recoverElem = recoverDiv(index, title, divElem)
+  divElem["replaceWith"](recoverElem)
+}
+
 Belt.Array.forEachWithIndex(posts, (index, post) => {
-  document["body"]["appendChild"](postDiv(index, post))
-  document["body"]["appendChild"](recoverDiv(index, post))
+  document["body"]["appendChild"](postDiv(Belt.Int.toString(index), post))
+  // document["body"]["appendChild"](recoverDiv(index, post))
+  document["getElementById"](appendId("block", Belt.Int.toString(index)))["addEventListener"](
+    "click",
+    removeFn,
+  )
 })
