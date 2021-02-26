@@ -54,29 +54,32 @@ let getIndexFromInd = index => {
   id
 }
 
-let postHeading = (heading: string) => {
+let appendId = (id, index) => `${id}-${index}`
+
+// returns a DOM element for the heading
+let postHeading = (~heading: string, ~className: string) => {
   let headingTag = document["createElement"]("h2")
-  headingTag["classList"] = "post-heading"
+  headingTag["classList"] = className
   headingTag["innerText"] = heading
   headingTag
 }
 
+// returns a DOM element for the heading
 let postSubHeading = (subHeading: string) => {
   let subHeadingTag = document["createElement"]("h3")
   subHeadingTag["innerText"] = subHeading
   subHeadingTag
 }
 
-let postParagraph = (paraText: string) => {
+// returns a DOM element for the paragraph
+let postParagraph = (~paraText: string, ~className: string) => {
   let paraTag = document["createElement"]("p")
-  paraTag["classList"] = "post-text"
+  paraTag["classList"] = className
   paraTag["innerText"] = paraText
   paraTag
 }
 
-let appendId = (id, index) => `${id}-${index}`
-let appendIdStr = (id, index) => `${id}-${index}`
-
+// Section of the recover div containing the title text
 let deletePara = title => {
   let paraTag = document["createElement"]("p")
   paraTag["classList"] = "text-center"
@@ -84,54 +87,74 @@ let deletePara = title => {
   let empText = document["createElement"]("em")
   empText["innerText"] = title
   let postText = document["createTextNode"](" will be permanently removed in 10 seconds.")
-  paraTag["appendChild"](preText)
-  paraTag["appendChild"](empText)
-  paraTag["appendChild"](postText)
+  paraTag["appendChild"](preText)->ignore
+  paraTag["appendChild"](empText)->ignore
+  paraTag["appendChild"](postText)->ignore
   paraTag
 }
 
-let restoreFn = (event, originalDiv) => {
+// Event to restore the post
+let restoreFn = (event, originalDiv, timeoutID) => {
   Js.log("Restore event called...")
+
+  // clearing the timeout of post deletion since the post is restored
+  window["clearTimeout"](timeoutID)->ignore
+
+  // Parent div
   let recoverElem = event["path"][2]
-  Js.log(recoverElem)
   recoverElem["replaceWith"](originalDiv)
 }
 
-let deleteFn = event => {
+// Event to restore the post
+let deleteFn = (event, timeoutID) => {
   Js.log("Delete event called...")
+
+  // clearing the timeout of post deletion since the post is deleted
+  window["clearTimeout"](timeoutID)->ignore
+
   let recoverElem = event["path"][2]
+
+  // removing the entire DOM element
   recoverElem["remove"]()
 }
 
 let recoverDiv = (index: string, title: string, originalDiv) => {
   let deletedDiv = document["createElement"]("div")
   deletedDiv["classList"] = "post-deleted pt-1"
-  deletedDiv["setAttribute"]("id", appendId("block", index))
-  deletedDiv["appendChild"](deletePara(title))
+  deletedDiv["setAttribute"]("id", appendId("block", index))->ignore
+  deletedDiv["appendChild"](deletePara(title))->ignore
 
   let flexDiv = document["createElement"]("div")
   flexDiv["classList"] = "flex-center"
 
   let restoreBtn = document["createElement"]("button")
-  restoreBtn["setAttribute"]("id", appendId("block-restore", index))
+  restoreBtn["setAttribute"]("id", appendId("block-restore", index))->ignore
   restoreBtn["classList"] = "button button-warning mr-1"
   restoreBtn["innerText"] = "Restore"
-  restoreBtn["addEventListener"]("click", event => {restoreFn(event, originalDiv)})
+
+  let timeoutID = window["setTimeout"](() => {
+    Js.log("Timeout")
+    document["getElementById"](deletedDiv["id"])["remove"]()
+  }, 10000)
+
+  restoreBtn["addEventListener"]("click", event => {
+    restoreFn(event, originalDiv, timeoutID)
+  })->ignore
 
   let delImmBtn = document["createElement"]("button")
-  delImmBtn["setAttribute"]("id", appendId("block-delete-immediate", index))
+  delImmBtn["setAttribute"]("id", appendId("block-delete-immediate", index))->ignore
   delImmBtn["classList"] = "button button-danger"
   delImmBtn["innerText"] = "Delete Immediately"
-  delImmBtn["addEventListener"]("click", deleteFn)
+  delImmBtn["addEventListener"]("click", event => {deleteFn(event, timeoutID)})->ignore
 
-  flexDiv["appendChild"](restoreBtn)
-  flexDiv["appendChild"](delImmBtn)
+  flexDiv["appendChild"](restoreBtn)->ignore
+  flexDiv["appendChild"](delImmBtn)->ignore
 
   let progressDiv = document["createElement"]("div")
   progressDiv["classList"] = "post-deleted-progress"
 
-  deletedDiv["appendChild"](flexDiv)
-  deletedDiv["appendChild"](progressDiv)
+  deletedDiv["appendChild"](flexDiv)->ignore
+  deletedDiv["appendChild"](progressDiv)->ignore
 
   deletedDiv
 }
@@ -145,37 +168,28 @@ let removeFn = event => {
   divElem["replaceWith"](recoverElem)
 }
 
-// let postId = index => `block-${Belt.Int.toString(index)}`
-// let btnId = index => `block-delete-${Belt.Int.toString(index)}`
-
 let postBtn = (index: string) => {
-  // <button id="block-delete-0" class="button button-danger">Remove this post</button>
   let btn = document["createElement"]("button")
-  btn["setAttribute"]("id", appendId("block-delete", index))
+  btn["setAttribute"]("id", appendId("block-delete", index))->ignore
   btn["classList"] = "button button-danger"
   btn["innerText"] = "Remove"
-  btn["addEventListener"]("click", removeFn)
+  btn["addEventListener"]("click", removeFn)->ignore
   btn
 }
 
 let postDiv = (index: string, post: Post.t) => {
   let mainDiv = document["createElement"]("div")
   mainDiv["classList"] = "post"
-  mainDiv["setAttribute"]("id", appendId("block", index))
-  mainDiv["appendChild"](postHeading(post.title))
-  mainDiv["appendChild"](postSubHeading(post.author))
+  mainDiv["setAttribute"]("id", appendId("block", index))->ignore
+  mainDiv["appendChild"](postHeading(~heading=post.title, ~className="post-heading"))->ignore
+  mainDiv["appendChild"](postSubHeading(post.author))->ignore
   Belt.Array.forEach(post.text, text => {
-    mainDiv["appendChild"](postParagraph(text))
+    mainDiv["appendChild"](postParagraph(~paraText=text, ~className="post-text"))
   })
-  mainDiv["appendChild"](postBtn(index))
+  mainDiv["appendChild"](postBtn(index))->ignore
   mainDiv
 }
 
 Belt.Array.forEachWithIndex(posts, (index, post) => {
   document["body"]["appendChild"](postDiv(Belt.Int.toString(index), post))
-  // document["body"]["appendChild"](recoverDiv(index, post))
-  // document["getElementById"](appendId("block", Belt.Int.toString(index)))["addEventListener"](
-  //   "click",
-  //   removeFn,
-  // )
 })

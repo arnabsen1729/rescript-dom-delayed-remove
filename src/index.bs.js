@@ -61,9 +61,13 @@ function getIndexFromInd(index) {
   return Belt_Array.getExn(splittedArray, splittedArray.length - 1 | 0);
 }
 
-function postHeading(heading) {
+function appendId(id, index) {
+  return id + "-" + index;
+}
+
+function postHeading(heading, className) {
   var headingTag = document.createElement("h2");
-  headingTag.classList = "post-heading";
+  headingTag.classList = className;
   headingTag.innerText = heading;
   return headingTag;
 }
@@ -74,19 +78,11 @@ function postSubHeading(subHeading) {
   return subHeadingTag;
 }
 
-function postParagraph(paraText) {
+function postParagraph(paraText, className) {
   var paraTag = document.createElement("p");
-  paraTag.classList = "post-text";
+  paraTag.classList = className;
   paraTag.innerText = paraText;
   return paraTag;
-}
-
-function appendId(id, index) {
-  return id + "-" + index;
-}
-
-function appendIdStr(id, index) {
-  return id + "-" + index;
 }
 
 function deletePara(title) {
@@ -102,15 +98,16 @@ function deletePara(title) {
   return paraTag;
 }
 
-function restoreFn($$event, originalDiv) {
+function restoreFn($$event, originalDiv, timeoutID) {
   console.log("Restore event called...");
+  window.clearTimeout(timeoutID);
   var recoverElem = Caml_array.get($$event.path, 2);
-  console.log(recoverElem);
   return recoverElem.replaceWith(originalDiv);
 }
 
-function deleteFn($$event) {
+function deleteFn($$event, timeoutID) {
   console.log("Delete event called...");
+  window.clearTimeout(timeoutID);
   var recoverElem = Caml_array.get($$event.path, 2);
   return recoverElem.remove();
 }
@@ -126,14 +123,20 @@ function recoverDiv(index, title, originalDiv) {
   restoreBtn.setAttribute("id", appendId("block-restore", index));
   restoreBtn.classList = "button button-warning mr-1";
   restoreBtn.innerText = "Restore";
+  var timeoutID = window.setTimeout((function (param) {
+          console.log("Timeout");
+          return document.getElementById(deletedDiv.id).remove();
+        }), 10000);
   restoreBtn.addEventListener("click", (function ($$event) {
-          return restoreFn($$event, originalDiv);
+          return restoreFn($$event, originalDiv, timeoutID);
         }));
   var delImmBtn = document.createElement("button");
   delImmBtn.setAttribute("id", appendId("block-delete-immediate", index));
   delImmBtn.classList = "button button-danger";
   delImmBtn.innerText = "Delete Immediately";
-  delImmBtn.addEventListener("click", deleteFn);
+  delImmBtn.addEventListener("click", (function ($$event) {
+          return deleteFn($$event, timeoutID);
+        }));
   flexDiv.appendChild(restoreBtn);
   flexDiv.appendChild(delImmBtn);
   var progressDiv = document.createElement("div");
@@ -165,10 +168,10 @@ function postDiv(index, post) {
   var mainDiv = document.createElement("div");
   mainDiv.classList = "post";
   mainDiv.setAttribute("id", appendId("block", index));
-  mainDiv.appendChild(postHeading(post.title));
+  mainDiv.appendChild(postHeading(post.title, "post-heading"));
   mainDiv.appendChild(postSubHeading(post.author));
   Belt_Array.forEach(post.text, (function (text) {
-          return mainDiv.appendChild(postParagraph(text));
+          return mainDiv.appendChild(postParagraph(text, "post-text"));
         }));
   mainDiv.appendChild(postBtn(index));
   return mainDiv;
@@ -182,11 +185,10 @@ export {
   Post ,
   posts ,
   getIndexFromInd ,
+  appendId ,
   postHeading ,
   postSubHeading ,
   postParagraph ,
-  appendId ,
-  appendIdStr ,
   deletePara ,
   restoreFn ,
   deleteFn ,
